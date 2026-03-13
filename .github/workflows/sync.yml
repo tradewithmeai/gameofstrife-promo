@@ -1,0 +1,47 @@
+name: Sync colors from main repo
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # Daily at 06:00 UTC
+  workflow_dispatch:        # Manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout promo repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch colors.ts from main repo and convert to JS
+        run: |
+          curl -sf "https://raw.githubusercontent.com/tradewithmeai/gameofstrife-mobile/main/utils/colors.ts" \
+          | node -e "
+            const lines = require('fs').readFileSync('/dev/stdin','utf8').split('\n');
+            const out = [];
+            out.push('// Color constants — auto-synced from utils/colors.ts in the main repo via GitHub Actions.');
+            out.push('// Do not edit manually; changes will be overwritten on next sync.');
+            out.push('');
+            out.push('const COLORS = {');
+            for (const line of lines) {
+              // Extract hex color constants — lines like: export const COLOR_NAME = '#rrggbb'
+              const m = line.match(/export const (\w+)\s*=\s*'(#[0-9a-fA-F]{3,8})'/);
+              if (m) out.push(\`  \${m[1]}: '\${m[2]}',\`);
+            }
+            out.push('}');
+            process.stdout.write(out.join('\n') + '\n');
+          " > engine/colors.js
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "sync-bot"
+          git config user.email "sync@noreply.github.com"
+          git diff --quiet engine/colors.js || (
+            git add engine/colors.js
+            git commit -m "[sync] Update colors from main repo"
+            git push
+          )

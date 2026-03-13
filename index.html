@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game of Strife — Promo Scenes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #000010;
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 18px;
+      color: #A78BFA;
+      text-shadow: 0 0 20px #A78BFA;
+      letter-spacing: 4px;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 8px;
+      color: #C4B5FD;
+      letter-spacing: 3px;
+      text-align: center;
+      margin-top: -24px;
+    }
+
+    .scene-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .scene-card {
+      border: 1px solid #330066;
+      border-radius: 12px;
+      padding: 24px;
+      background: #110025;
+      text-decoration: none;
+      color: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .scene-card:hover {
+      border-color: #A78BFA;
+      box-shadow: 0 0 20px rgba(167,139,250,0.2);
+      transform: translateY(-2px);
+    }
+
+    .scene-label {
+      font-size: 7px;
+      color: #888;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .scene-name {
+      font-size: 11px;
+      color: #A78BFA;
+    }
+
+    .scene-desc {
+      font-size: 7px;
+      color: #C4B5FD;
+      line-height: 1.8;
+    }
+
+    .scene-status {
+      font-size: 7px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      align-self: flex-start;
+    }
+
+    .status-ready { background: rgba(0,255,0,0.1); color: #00FF00; border: 1px solid #00FF00; }
+    .status-wip   { background: rgba(255,255,0,0.1); color: #FFFF00; border: 1px solid #FFFF00; }
+  </style>
+</head>
+<body>
+  <h1>GAME OF STRIFE</h1>
+  <div class="subtitle">Promotional Video Scenes</div>
+
+  <div class="scene-grid">
+    <a class="scene-card" href="scenes/gameplay.html">
+      <div class="scene-label">Scene 01</div>
+      <div class="scene-name">Gameplay Demo</div>
+      <div class="scene-desc">Full game: token placement, Conway simulation, and winner reveal inside a phone mockup.</div>
+      <div class="scene-status status-ready">Ready</div>
+    </a>
+
+    <div class="scene-card" style="opacity:0.5; cursor:default;">
+      <div class="scene-label">Scene 02</div>
+      <div class="scene-name">Superpower Showcase</div>
+      <div class="scene-desc">Close-up highlight of each superpower type and their unique Conway rules.</div>
+      <div class="scene-status status-wip">Coming Soon</div>
+    </div>
+
+    <div class="scene-card" style="opacity:0.5; cursor:default;">
+      <div class="scene-label">Scene 03</div>
+      <div class="scene-name">Feature Callouts</div>
+      <div class="scene-desc">Animated text cards showing key game features with visual examples.</div>
+      <div class="scene-status status-wip">Coming Soon</div>
+    </div>
+  </div>
+</body>
+</html>
