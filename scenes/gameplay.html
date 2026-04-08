@@ -84,7 +84,7 @@
       box-shadow: 0 0 30px rgba(167,139,250,0.2);
     }
 
-    /* Overlay text (titles, winner) */
+    /* Overlay text (titles, messages) */
     .overlay {
       position: absolute;
       inset: 0;
@@ -106,6 +106,7 @@
       text-shadow: 0 0 20px #A78BFA, 0 0 40px #A78BFA;
       text-align: center;
       line-height: 1.6;
+      white-space: pre-line;
     }
 
     .overlay-subtitle {
@@ -115,13 +116,6 @@
       margin-top: 14px;
       text-align: center;
       letter-spacing: 2px;
-    }
-
-    .overlay-winner {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 14px;
-      text-align: center;
-      line-height: 1.8;
     }
 
     /* Result card */
@@ -232,7 +226,7 @@
           <div class="game-hud">
             <div class="hud-player-box hud-p1-box" id="hud-p1-box">
               <div class="hud-player-name">PLAYER 1</div>
-              <div class="hud-count" id="hud-p1-count">15</div>
+              <div class="hud-count" id="hud-p1-count">--</div>
               <div class="hud-count-label" id="hud-p1-label">tokens</div>
             </div>
             <div class="hud-center">
@@ -240,7 +234,7 @@
             </div>
             <div class="hud-player-box hud-p2-box" id="hud-p2-box">
               <div class="hud-player-name">PLAYER 2</div>
-              <div class="hud-count" id="hud-p2-count">15</div>
+              <div class="hud-count" id="hud-p2-count">--</div>
               <div class="hud-count-label" id="hud-p2-label">tokens</div>
             </div>
           </div>
@@ -249,10 +243,10 @@
           <div class="board-area">
             <canvas id="gameCanvas"></canvas>
 
-            <!-- Title overlay -->
-            <div class="overlay" id="overlayTitle">
-              <div class="overlay-title">GAME OF<br>STRIFE</div>
-              <div class="overlay-subtitle">Conway's Game of Life — PvP</div>
+            <!-- Overlay (titles, messages) -->
+            <div class="overlay" id="overlay">
+              <div class="overlay-title" id="overlayText"></div>
+              <div class="overlay-subtitle" id="overlaySubtext"></div>
             </div>
           </div>
 
@@ -286,6 +280,7 @@
     <button class="ctrl-btn" onclick="toggleControls()">HIDE</button>
   </div>
 
+  <script src="../config/scene.js"></script>
   <script src="../engine/superpowers.js"></script>
   <script src="../engine/colors.js"></script>
   <script src="../engine/conway.js"></script>
@@ -293,19 +288,20 @@
   <script src="../ui/hud.js"></script>
   <script src="../scripts/runner.js"></script>
   <script>
-    // ─── Setup ───────────────────────────────────────────────────────────────
+    // ─── State ────────────────────────────────────────────────────────────────
 
-    const BOARD_SIZE = 9
-    const TOKENS_PER_PLAYER = 15
-
+    const cfg = SCENE_CONFIG
     const canvas = document.getElementById('gameCanvas')
-    let board = makeEmptyBoard(BOARD_SIZE)
-    let p1Remaining = TOKENS_PER_PLAYER
-    let p2Remaining = TOKENS_PER_PLAYER
+
+    let board = makeEmptyBoard(cfg.settings.boardSize)
+    let p1Remaining = cfg.settings.tokensPerPlayer
+    let p2Remaining = cfg.settings.tokensPerPlayer
     let currentTurn = 'P1'
     let simFrames = []
     let cancelAnim = null
     let timeline = null
+
+    // ─── Board helpers ────────────────────────────────────────────────────────
 
     function makeEmptyBoard(size) {
       return Array.from({ length: size }, () =>
@@ -322,11 +318,10 @@
       canvas.height = dim
     }
 
-    // Scale phone if needed
     function scalePhone() {
       const wrap = document.getElementById('phoneWrap')
       const vw = window.innerWidth
-      const vh = window.innerHeight - 80  // leave room for controls
+      const vh = window.innerHeight - 80
       const scaleX = vw / 390
       const scaleY = vh / 844
       const scale = Math.min(scaleX, scaleY, 1)
@@ -337,17 +332,39 @@
     scalePhone()
     resizeCanvas()
 
-    // ─── Scene actions ────────────────────────────────────────────────────────
+    // ─── Overlay system ───────────────────────────────────────────────────────
 
-    function showTitle() {
-      document.getElementById('overlayTitle').classList.add('visible')
+    let overlayHideTimer = null
+
+    function showOverlay(text, sub) {
+      if (overlayHideTimer) { clearTimeout(overlayHideTimer); overlayHideTimer = null }
+      document.getElementById('overlayText').textContent = text || ''
+      document.getElementById('overlaySubtext').textContent = sub || ''
+      document.getElementById('overlay').classList.add('visible')
     }
 
-    function hideTitle() {
-      document.getElementById('overlayTitle').classList.remove('visible')
+    function hideOverlay() {
+      document.getElementById('overlay').classList.remove('visible')
     }
 
-    function placeToken(player, row, col, spType = 0) {
+    // Fire a named moment — matches overlays entries with `at === name`
+    function fireOverlayMoment(name) {
+      const entry = (cfg.overlays || []).find(o => o.at === name)
+      if (!entry) return
+      if (entry.text === null || entry.text === undefined) {
+        hideOverlay()
+      } else {
+        showOverlay(entry.text, entry.sub)
+        if (entry.duration > 0) {
+          overlayHideTimer = setTimeout(hideOverlay, entry.duration)
+        }
+      }
+    }
+
+    // ─── Scene action functions ───────────────────────────────────────────────
+
+    function placeToken(player, row, col, spType) {
+      spType = spType || 0
       const p = player === 'P1' ? 0 : 1
       board[row][col] = makeCell(p, spType)
       if (player === 'P1') p1Remaining--
@@ -355,40 +372,59 @@
       currentTurn = player === 'P1' ? 'P2' : 'P1'
       renderBoard(canvas, board)
       renderHUD({
-        stage: 'placement',
-        currentTurn,
-        p1Tokens: p1Remaining,
-        p2Tokens: p2Remaining,
-        p1Cells: 0, p2Cells: 0,
-        generation: 0, maxGenerations: 100,
+        stage: 'placement', currentTurn,
+        p1Tokens: p1Remaining, p2Tokens: p2Remaining,
+        p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: cfg.settings.maxGenerations,
+      })
+    }
+
+    function assignSuperpower(player, row, col, spType) {
+      board[row][col].superpowerType = spType
+      currentTurn = player === 'P1' ? 'P2' : 'P1'
+      renderBoard(canvas, board)
+      renderHUD({
+        stage: 'sp_assignment', currentTurn,
+        p1Tokens: p1Remaining, p2Tokens: p2Remaining,
+        p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: cfg.settings.maxGenerations,
       })
     }
 
     function startSimulation() {
-      simFrames = runSimulation(board, {
-        birthRules: [3],
-        survivalRules: [2, 3],
-        enableToroidalBoard: true,
-        superpowerRules: DEFAULT_SUPERPOWER_RULES,
-      }, 100)
+      fireOverlayMoment('simulation_start')
+
+      const simSettings = {
+        birthRules:          cfg.settings.conwayRules.birthRules,
+        survivalRules:       cfg.settings.conwayRules.survivalRules,
+        enableToroidalBoard: cfg.settings.enableToroidalBoard !== false,
+        superpowerRules:     cfg.settings.superpowerRules
+          ? { ...DEFAULT_SUPERPOWER_RULES, ...cfg.settings.superpowerRules }
+          : DEFAULT_SUPERPOWER_RULES,
+      }
+
+      simFrames = runSimulation(board, simSettings, cfg.settings.maxGenerations)
+
+      // For short_clip: slice to requested generation count
+      const stop = cfg.stopAfterGeneration
+      const frames = (stop != null && stop < simFrames.length - 1)
+        ? simFrames.slice(0, stop + 1)
+        : simFrames
 
       let gen = 0
-      cancelAnim = animateSimulation(simFrames, 150, (frame, idx) => {
+      cancelAnim = animateSimulation(frames, cfg.settings.generationDelayMs, (frame, idx) => {
         gen = idx
         board = frame
         renderBoard(canvas, board)
         const counts = countCells(board)
         renderHUD({
-          stage: 'simulation',
-          currentTurn: null,
+          stage: 'simulation', currentTurn: null,
           p1Tokens: 0, p2Tokens: 0,
-          p1Cells: counts.p1,
-          p2Cells: counts.p2,
-          generation: gen,
-          maxGenerations: simFrames.length - 1,
+          p1Cells: counts.p1, p2Cells: counts.p2,
+          generation: gen, maxGenerations: frames.length - 1,
         })
       }, () => {
-        showResult(gen)
+        if (cfg.type === 'still_image') return  // no result card for stills
+        if (cfg.showResult !== false) showResult(gen)
+        fireOverlayMoment('result')
       })
     }
 
@@ -407,75 +443,161 @@
       document.getElementById('result-gen').textContent = `${generations} GENERATIONS`
       document.getElementById('resultCard').classList.add('visible')
 
-      renderHUD({ stage: 'finished', currentTurn: null, p1Tokens: 0, p2Tokens: 0,
-                  p1Cells: counts.p1, p2Cells: counts.p2, generation: generations, maxGenerations: simFrames.length })
+      renderHUD({
+        stage: 'finished', currentTurn: null, p1Tokens: 0, p2Tokens: 0,
+        p1Cells: counts.p1, p2Cells: counts.p2,
+        generation: generations, maxGenerations: simFrames.length,
+      })
     }
 
-    // ─── Demo placement script ────────────────────────────────────────────────
-    // 9×9 board — positions as [row, col].
-    // Edit this sequence to choreograph different games.
+    // ─── Timeline builder ─────────────────────────────────────────────────────
 
-    const PLACEMENTS = [
-      // [player, row, col, spType]  spType: 0=normal 1=tank 2=spreader etc
-      ['P1', 1, 1],  ['P2', 7, 7],
-      ['P1', 1, 3],  ['P2', 7, 5],
-      ['P1', 2, 2],  ['P2', 6, 6],
-      ['P1', 3, 1],  ['P2', 5, 7],
-      ['P1', 1, 5],  ['P2', 7, 3],
-      ['P1', 3, 4],  ['P2', 5, 4],
-      ['P1', 4, 2],  ['P2', 4, 6],
-      ['P1', 2, 4, 1],  ['P2', 6, 4, 2],  // tank & spreader
-      ['P1', 0, 4],  ['P2', 8, 4],
-      ['P1', 4, 0],  ['P2', 4, 8],
-      ['P1', 3, 3, 2],  ['P2', 5, 5, 1],  // spreader & tank
-      ['P1', 0, 2],  ['P2', 8, 6],
-      ['P1', 2, 0],  ['P2', 6, 8],
-      ['P1', 0, 6],  ['P2', 8, 2],
-      ['P1', 4, 4],  ['P2', 4, 3],  // center clash
-    ]
-
-    function buildTimeline() {
+    function buildTimelineFromConfig() {
       const steps = []
-      steps.push({ at: 500,  fn: showTitle })
-      steps.push({ at: 2500, fn: hideTitle })
-      steps.push({ at: 2700, fn: () => renderHUD({ stage: 'placement', currentTurn: 'P1',
-                                p1Tokens: TOKENS_PER_PLAYER, p2Tokens: TOKENS_PER_PLAYER,
-                                p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: 100 }) })
+      const intro = cfg.introDelayMs ?? 500
+      const p1Delay = cfg.placementDelayMs ?? 600
+      const p2Delay = cfg.p2PlacementDelayMs ?? 400
+      const spDelay = cfg.spAssignDelayMs ?? 500
 
-      let t = 3000
-      for (const [player, row, col, spType = 0] of PLACEMENTS) {
-        const delay = player === 'P1' ? 600 : 400  // P2 replies quicker — feels responsive
-        steps.push({ at: t, fn: placeToken, args: [player, row, col, spType] })
+      // Absolute-ms overlays (named-moment overlays are fired inline, not via timeline)
+      for (const entry of (cfg.overlays || [])) {
+        if (typeof entry.at === 'number') {
+          steps.push({ at: entry.at, fn: entry.text === null ? hideOverlay : showOverlay,
+            args: entry.text === null ? [] : [entry.text, entry.sub] })
+          if (entry.text !== null && entry.duration > 0) {
+            steps.push({ at: entry.at + entry.duration, fn: hideOverlay })
+          }
+        }
+      }
+
+      // Initial HUD state
+      steps.push({ at: intro - 10, fn: renderHUD, args: [{
+        stage: 'placement', currentTurn: 'P1',
+        p1Tokens: cfg.settings.tokensPerPlayer, p2Tokens: cfg.settings.tokensPerPlayer,
+        p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: cfg.settings.maxGenerations,
+      }]})
+
+      // Placement moves
+      let t = intro
+      for (const move of (cfg.placement || [])) {
+        const [player, row, col, spType] = move
+        const delay = player === 'P1' ? p1Delay : p2Delay
+        steps.push({ at: t, fn: placeToken, args: [player, row, col, spType || 0] })
         t += delay
       }
 
+      // Named overlay: placement_done
+      steps.push({ at: t, fn: fireOverlayMoment, args: ['placement_done'] })
+      t += 200
+
+      // SP assignment phase (manual mode only)
+      if (cfg.settings.superpowerPlacementMode === 'manual' && cfg.spAssignments && cfg.spAssignments.length > 0) {
+        // Fire sp_assignment HUD state
+        steps.push({ at: t, fn: renderHUD, args: [{
+          stage: 'sp_assignment', currentTurn: cfg.spAssignments[0][0],
+          p1Tokens: cfg.settings.tokensPerPlayer, p2Tokens: cfg.settings.tokensPerPlayer,
+          p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: cfg.settings.maxGenerations,
+        }]})
+        t += 200
+
+        for (const [player, row, col, spType] of cfg.spAssignments) {
+          steps.push({ at: t, fn: assignSuperpower, args: [player, row, col, spType] })
+          t += spDelay
+        }
+
+        steps.push({ at: t, fn: fireOverlayMoment, args: ['sp_assignment_done'] })
+        t += 300
+      }
+
+      // Start simulation
       steps.push({ at: t + 400, fn: startSimulation })
+
       return steps
+    }
+
+    // ─── Still image renderer (no animation) ─────────────────────────────────
+
+    function renderStillImage() {
+      if (cfg.boardState) {
+        board = cfg.boardState
+      } else {
+        // Run placement silently
+        for (const move of (cfg.placement || [])) {
+          const [player, row, col, spType] = move
+          const p = player === 'P1' ? 0 : 1
+          board[row][col] = makeCell(p, spType || 0)
+        }
+        // Apply SP assignments silently
+        if (cfg.settings.superpowerPlacementMode === 'manual') {
+          for (const [, row, col, spType] of (cfg.spAssignments || [])) {
+            board[row][col].superpowerType = spType
+          }
+        }
+        // Fast-simulate to requested generation or stability
+        const simSettings = {
+          birthRules:          cfg.settings.conwayRules.birthRules,
+          survivalRules:       cfg.settings.conwayRules.survivalRules,
+          enableToroidalBoard: cfg.settings.enableToroidalBoard !== false,
+          superpowerRules:     cfg.settings.superpowerRules
+            ? { ...DEFAULT_SUPERPOWER_RULES, ...cfg.settings.superpowerRules }
+            : DEFAULT_SUPERPOWER_RULES,
+        }
+        const frames = runSimulation(board, simSettings, cfg.settings.maxGenerations)
+        const stop = cfg.stopAfterGeneration
+        const finalFrame = (stop != null && stop < frames.length - 1)
+          ? frames[stop]
+          : frames[frames.length - 1]
+        board = finalFrame
+      }
+
+      renderBoard(canvas, board)
+      const counts = countCells(board)
+      renderHUD({
+        stage: 'finished', currentTurn: null, p1Tokens: 0, p2Tokens: 0,
+        p1Cells: counts.p1, p2Cells: counts.p2,
+        generation: cfg.stopAfterGeneration ?? 0,
+        maxGenerations: cfg.settings.maxGenerations,
+      })
+      if (cfg.showResult !== false) {
+        showResult(cfg.stopAfterGeneration ?? 0)
+      }
     }
 
     // ─── Controls ─────────────────────────────────────────────────────────────
 
     function playScene() {
       document.getElementById('btnPlay').disabled = true
-      if (!timeline) timeline = runner(buildTimeline())
+
+      if (cfg.type === 'still_image') {
+        renderStillImage()
+        return
+      }
+
+      if (!timeline) timeline = runner(buildTimelineFromConfig())
       timeline.play()
     }
 
     function resetScene() {
-      if (cancelAnim) cancelAnim()
+      if (cancelAnim) { cancelAnim(); cancelAnim = null }
+      if (overlayHideTimer) { clearTimeout(overlayHideTimer); overlayHideTimer = null }
       if (timeline) { timeline.reset(); timeline = null }
-      board = makeEmptyBoard(BOARD_SIZE)
-      p1Remaining = TOKENS_PER_PLAYER
-      p2Remaining = TOKENS_PER_PLAYER
+
+      board = makeEmptyBoard(cfg.settings.boardSize)
+      p1Remaining = cfg.settings.tokensPerPlayer
+      p2Remaining = cfg.settings.tokensPerPlayer
       currentTurn = 'P1'
       simFrames = []
+
       document.getElementById('resultCard').classList.remove('visible')
-      document.getElementById('overlayTitle').classList.remove('visible')
+      hideOverlay()
       document.getElementById('btnPlay').disabled = false
       resizeCanvas()
       renderBoard(canvas, board)
-      renderHUD({ stage: 'placement', currentTurn: 'P1', p1Tokens: TOKENS_PER_PLAYER,
-                  p2Tokens: TOKENS_PER_PLAYER, p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: 100 })
+      renderHUD({
+        stage: 'placement', currentTurn: 'P1',
+        p1Tokens: cfg.settings.tokensPerPlayer, p2Tokens: cfg.settings.tokensPerPlayer,
+        p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: cfg.settings.maxGenerations,
+      })
     }
 
     function toggleControls() {
@@ -483,11 +605,14 @@
       c.style.display = c.style.display === 'none' ? 'flex' : 'none'
     }
 
-    // ─── Init ─────────────────────────────────────────────────────────────────
+    // ─── Init ──────────────────────────────────────────────────────────────────
     resizeCanvas()
     renderBoard(canvas, board)
-    renderHUD({ stage: 'placement', currentTurn: 'P1', p1Tokens: TOKENS_PER_PLAYER,
-                p2Tokens: TOKENS_PER_PLAYER, p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: 100 })
+    renderHUD({
+      stage: 'placement', currentTurn: 'P1',
+      p1Tokens: cfg.settings.tokensPerPlayer, p2Tokens: cfg.settings.tokensPerPlayer,
+      p1Cells: 0, p2Cells: 0, generation: 0, maxGenerations: cfg.settings.maxGenerations,
+    })
   </script>
 </body>
 </html>

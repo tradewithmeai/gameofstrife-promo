@@ -8,15 +8,16 @@ function renderHUD(state) {
   const { stage, currentTurn, p1Tokens, p2Tokens, p1Cells, p2Cells, generation, maxGenerations } = state
 
   // Player token / cell counts
-  setEl('hud-p1-count', stage === 'simulation' || stage === 'finished' ? p1Cells : p1Tokens)
-  setEl('hud-p2-count', stage === 'simulation' || stage === 'finished' ? p2Cells : p2Tokens)
-  setEl('hud-p1-label', stage === 'placement' ? 'tokens' : 'cells')
-  setEl('hud-p2-label', stage === 'placement' ? 'tokens' : 'cells')
+  const showCells = stage === 'simulation' || stage === 'finished'
+  setEl('hud-p1-count', showCells ? p1Cells : p1Tokens)
+  setEl('hud-p2-count', showCells ? p2Cells : p2Tokens)
 
   // Center status
   let statusText = ''
   if (stage === 'placement') {
     statusText = currentTurn === 'P1' ? 'P1 PLACING' : 'P2 PLACING'
+  } else if (stage === 'sp_assignment') {
+    statusText = currentTurn ? `${currentTurn} ASSIGNING` : 'SP PHASE'
   } else if (stage === 'simulation') {
     statusText = `GEN ${generation} / ${maxGenerations}`
   } else if (stage === 'finished') {
@@ -24,12 +25,18 @@ function renderHUD(state) {
   }
   setEl('hud-status', statusText)
 
+  // Count labels vary by stage
+  const inPlacement = stage === 'placement' || stage === 'sp_assignment'
+  setEl('hud-p1-label', inPlacement ? 'tokens' : 'cells')
+  setEl('hud-p2-label', inPlacement ? 'tokens' : 'cells')
+
   // Active player highlight
   const p1Box = document.getElementById('hud-p1-box')
   const p2Box = document.getElementById('hud-p2-box')
   if (p1Box && p2Box) {
-    p1Box.classList.toggle('hud-active', currentTurn === 'P1' && stage === 'placement')
-    p2Box.classList.toggle('hud-active', currentTurn === 'P2' && stage === 'placement')
+    const placing = stage === 'placement' || stage === 'sp_assignment'
+    p1Box.classList.toggle('hud-active', currentTurn === 'P1' && placing)
+    p2Box.classList.toggle('hud-active', currentTurn === 'P2' && placing)
   }
 }
 
