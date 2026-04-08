@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../ui/phone-frame.css">
+  <link rel="stylesheet" href="../ui/promo-theme.css">
   <style>
     /* HUD */
     .game-hud {
@@ -212,6 +213,18 @@
 <body>
   <div class="scene-bg"></div>
 
+  <!-- Broadcast title banner -->
+  <div class="promo-top-banner">
+    <span class="promo-logo">GAME OF STRIFE</span>
+    <span class="promo-logo-sub">Conway's Game of Life — PvP</span>
+  </div>
+
+  <!-- Bottom rainbow strip -->
+  <div class="promo-bottom-strip"></div>
+
+  <!-- Outer retro overlay stage (outside phone) -->
+  <div id="retro-overlay-stage"></div>
+
   <div class="phone-wrap" id="phoneWrap">
     <div class="phone-shell">
       <div class="phone-island"></div>
@@ -282,6 +295,7 @@
 
   <script src="../config/scene.js"></script>
   <script src="../engine/superpowers.js"></script>
+  <script src="../scripts/retro-overlays.js"></script>
   <script src="../engine/colors.js"></script>
   <script src="../engine/conway.js"></script>
   <script src="../ui/board.js"></script>
@@ -347,18 +361,19 @@
       document.getElementById('overlay').classList.remove('visible')
     }
 
-    // Fire a named moment — matches overlays entries with `at === name`
+    // Fire a named moment — routes inner vs outer overlays
     function fireOverlayMoment(name) {
-      const entry = (cfg.overlays || []).find(o => o.at === name)
-      if (!entry) return
-      if (entry.text === null || entry.text === undefined) {
-        hideOverlay()
-      } else {
-        showOverlay(entry.text, entry.sub)
-        if (entry.duration > 0) {
-          overlayHideTimer = setTimeout(hideOverlay, entry.duration)
+      // In-phone overlays (no position field, or position !== 'outer')
+      const inner = (cfg.overlays || []).find(o => o.at === name && o.position !== 'outer')
+      if (inner) {
+        if (inner.text === null || inner.text === undefined) hideOverlay()
+        else {
+          showOverlay(inner.text, inner.sub)
+          if (inner.duration > 0) overlayHideTimer = setTimeout(hideOverlay, inner.duration)
         }
       }
+      // Outer retro overlays
+      if (typeof window.fireRetroOverlay === 'function') window.fireRetroOverlay(name)
     }
 
     // ─── Scene action functions ───────────────────────────────────────────────
@@ -462,10 +477,15 @@
       // Absolute-ms overlays (named-moment overlays are fired inline, not via timeline)
       for (const entry of (cfg.overlays || [])) {
         if (typeof entry.at === 'number') {
-          steps.push({ at: entry.at, fn: entry.text === null ? hideOverlay : showOverlay,
-            args: entry.text === null ? [] : [entry.text, entry.sub] })
-          if (entry.text !== null && entry.duration > 0) {
-            steps.push({ at: entry.at + entry.duration, fn: hideOverlay })
+          if (entry.position === 'outer') {
+            // Route to retro system
+            steps.push({ at: entry.at, fn: () => { if (typeof window.fireRetroOverlayEntry === 'function') window.fireRetroOverlayEntry(entry) } })
+          } else {
+            steps.push({ at: entry.at, fn: entry.text === null ? hideOverlay : showOverlay,
+              args: entry.text === null ? [] : [entry.text, entry.sub] })
+            if (entry.text !== null && entry.duration > 0) {
+              steps.push({ at: entry.at + entry.duration, fn: hideOverlay })
+            }
           }
         }
       }

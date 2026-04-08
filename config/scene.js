@@ -20,106 +20,87 @@
 const SCENE_CONFIG = {
 
   // ── Scene type ──────────────────────────────────────────────────────────────
-  // 'full_game' | 'short_clip' | 'still_image'
   type: 'full_game',
 
   // ── Game settings ───────────────────────────────────────────────────────────
-  // These mirror the options in the mobile app's dev settings.
   settings: {
-    boardSize: 9,          // grid dimensions (5–15)
-    tokensPerPlayer: 15,   // tokens each player places
+    boardSize: 10,
+    tokensPerPlayer: 15,
 
-    // Which superpower types can appear in this game (1–7).
-    // Only matters for 'manual' spPlacementMode or if you want to restrict the SP legend.
-    enabledSuperpowers: [1, 2, 3, 6],
-
-    // 'random'  — SP types specified directly in the placement array (or default to 0)
-    // 'manual'  — all placements are normal (spType 0); SPs assigned in spAssignments below
+    enabledSuperpowers: [],           // no superpowers
     superpowerPlacementMode: 'random',
 
-    // Conway birth/survival rules
     conwayRules: {
-      birthRules:    [3],       // neighbor counts that birth a new cell
-      survivalRules: [2, 3],    // neighbor counts that keep a cell alive
+      birthRules:    [3],
+      survivalRules: [2, 3],
     },
 
-    // Override specific superpower rules. null = use all defaults from superpowers.js.
-    // Example: { 1: { surviveMinNeighbors: 2, surviveMaxNeighbors: -1, randomDeathChance: 0, birthMinNeighbors: -1, birthBonusChance: 1.0 } }
     superpowerRules: null,
-
-    enableToroidalBoard: true,  // edges wrap around (true matches server default)
-    maxGenerations: 100,        // maximum simulation generations
-    generationDelayMs: 200,     // ms per simulation frame (lower = faster animation)
+    enableToroidalBoard: true,
+    maxGenerations: 100,
+    generationDelayMs: 180,
   },
 
   // ── Placement sequence ──────────────────────────────────────────────────────
-  // Each entry: [player, row, col, spType?]
-  //   player:  'P1' or 'P2'
-  //   row/col: 0-indexed grid coordinates (0,0 = top-left)
-  //   spType:  optional — 0=Normal, 1=Tank, 2=Spreader, 3=Survivor, 4=Ghost,
-  //                       5=Replicator, 6=Destroyer, 7=Hybrid (default: 0)
-  //
-  // For superpowerPlacementMode:'manual', leave out spType entirely — assign below.
-  // Moves alternate P1/P2 by convention but any order is supported.
+  // 15 tokens each. P1 builds in the top-left quadrant, P2 in the bottom-right.
+  // All spType 0 (normal). Moves alternate P1 / P2.
   placement: [
-    ['P1', 1, 1],       ['P2', 7, 7],
-    ['P1', 1, 3],       ['P2', 7, 5],
-    ['P1', 2, 2],       ['P2', 6, 6],
-    ['P1', 3, 1],       ['P2', 5, 7],
-    ['P1', 1, 5],       ['P2', 7, 3],
-    ['P1', 3, 4],       ['P2', 5, 4],
-    ['P1', 4, 2],       ['P2', 4, 6],
-    ['P1', 2, 4, 1],    ['P2', 6, 4, 2],   // Tank vs Spreader
-    ['P1', 0, 4],       ['P2', 8, 4],
-    ['P1', 4, 0],       ['P2', 4, 8],
-    ['P1', 3, 3, 2],    ['P2', 5, 5, 1],   // Spreader vs Tank
-    ['P1', 0, 2],       ['P2', 8, 6],
-    ['P1', 2, 0],       ['P2', 6, 8],
-    ['P1', 0, 6],       ['P2', 8, 2],
-    ['P1', 4, 4],       ['P2', 4, 3],      // center clash
+    ['P1', 0, 0],  ['P2', 9, 9],
+    ['P1', 0, 2],  ['P2', 9, 7],
+    ['P1', 1, 1],  ['P2', 8, 8],
+    ['P1', 2, 0],  ['P2', 7, 9],
+    ['P1', 1, 3],  ['P2', 8, 6],
+    ['P1', 2, 2],  ['P2', 7, 7],
+    ['P1', 3, 1],  ['P2', 6, 8],
+    ['P1', 0, 4],  ['P2', 9, 5],
+    ['P1', 2, 4],  ['P2', 7, 5],
+    ['P1', 3, 3],  ['P2', 6, 6],
+    ['P1', 4, 0],  ['P2', 5, 9],
+    ['P1', 4, 2],  ['P2', 5, 7],
+    ['P1', 1, 5],  ['P2', 8, 4],
+    ['P1', 3, 5],  ['P2', 6, 4],
+    ['P1', 0, 6],  ['P2', 9, 3],
   ],
 
   // ── SP assignment phase ─────────────────────────────────────────────────────
-  // Only used when superpowerPlacementMode is 'manual'.
-  // Each entry: [player, row, col, spType]
-  // The cell at (row, col) must already be owned by that player from the placement phase.
-  spAssignments: [
-    // ['P1', 2, 4, 1],   // assign Tank to P1's cell at row 2, col 4
-    // ['P2', 6, 4, 2],   // assign Spreader to P2's cell at row 6, col 4
-  ],
+  spAssignments: [],
 
   // ── Direct board state ──────────────────────────────────────────────────────
-  // For still_image scenes: optionally provide a complete board to render directly,
-  // skipping placement and simulation entirely.
-  // Format: Cell[][] where Cell = { player: 0|1|null, alive: bool, superpowerType: 0-7, lives: 1, memory: 0 }
-  // null = compute from placement sequence + simulation
   boardState: null,
 
   // ── Clip control ────────────────────────────────────────────────────────────
-  // Stop simulation after this many generations and freeze/show result.
-  // null = run until board stabilises or maxGenerations is reached.
-  // Use with type:'short_clip' or type:'still_image' to capture a specific moment.
-  stopAfterGeneration: null,
+  stopAfterGeneration: null,   // run to completion
 
   // ── Text overlays ───────────────────────────────────────────────────────────
-  // Each entry fires at a named moment or absolute ms from scene start.
-  // at:       'start' | 'placement_done' | 'sp_assignment_done' | 'simulation_start' | 'result'
-  //           OR a number (ms from scene start, for overlays during placement)
-  // text:     Main text to display. Use \n for line breaks. null = hide overlay.
-  // sub:      Optional subtitle (smaller text below main).
-  // duration: How long to show (ms). 0 = stays until explicitly hidden by another overlay entry.
+  // IN-PHONE (default) — appears over the board inside the phone:
+  //   at: named moment or ms | text: string or null (hides) | sub: subtitle | duration: ms
+  //
+  // OUTER RETRO (add position:'outer') — big 80s text outside the phone:
+  //   style:     'bubble' | 'starburst' | 'ticker'
+  //   color:     text/shape fill color (default: random bright)
+  //   size:      'sm' | 'md' | 'lg' | 'xl'
+  //   placement: 'left' | 'right' | 'top' | 'center' | 'bottom-left' | 'bottom-right'
+  //   angle:     degrees tilt (default: random ±6°)
+  //   anim:      'wham' | 'slide-left' | 'slide-right'
   overlays: [
     { at: 'start', text: 'GAME OF\nSTRIFE', sub: "Conway's Game of Life — PvP", duration: 2000 },
-    { at: 2500,    text: null },   // hide overlay before placement starts
+    { at: 2500,    text: null },
+
+    // ── Outer retro overlays (uncomment to enable) ─────────────────────────
+    // { at: 'simulation_start', position: 'outer', style: 'starburst',
+    //   text: 'FIGHT!', color: '#FFFF00', size: 'xl', placement: 'right', anim: 'wham', duration: 2000 },
+    // { at: 'result', position: 'outer', style: 'bubble',
+    //   text: 'GAME\nOVER', color: '#FF006E', size: 'lg', placement: 'left', anim: 'slide-left', duration: 4000 },
+    // { at: 'placement_done', position: 'outer', style: 'ticker',
+    //   text: 'TOKENS PLACED ★ SIMULATION STARTING ★ WHO WILL SURVIVE?', color: '#00FFFF', duration: 5000 },
   ],
 
   // ── Result card ─────────────────────────────────────────────────────────────
-  // Show the scores + winner card after simulation ends.
   showResult: true,
 
   // ── Timing ──────────────────────────────────────────────────────────────────
-  introDelayMs:       500,    // ms before first overlay/placement after pressing PLAY
-  placementDelayMs:   600,    // ms between each P1 placement
-  p2PlacementDelayMs: 400,    // ms between each P2 placement (faster = more responsive feel)
-  spAssignDelayMs:    500,    // ms between each SP assignment
+  introDelayMs:       500,
+  placementDelayMs:   550,
+  p2PlacementDelayMs: 380,
+  spAssignDelayMs:    500,
 }

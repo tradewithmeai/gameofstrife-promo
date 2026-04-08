@@ -1,0 +1,366 @@
+/* ─── Promo Theme — Broadcast Frame Surrounding ────────────────────────────── */
+/* Wraps the phone mockup in a retro 80s broadcast production aesthetic.        */
+/* Does NOT touch phone-frame.css or anything inside .phone-wrap.               */
+
+/* ── Body override ─────────────────────────────────────────────────────────── */
+body {
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ── Scene background — CRT + neon grid ──────────────────────────────────────*/
+.scene-bg {
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 50%,
+      rgba(80, 0, 160, 0.25) 0%,
+      rgba(13, 0, 26, 0.95) 55%,
+      #000 100%);
+}
+
+/* CRT scanlines */
+.scene-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(0, 0, 0, 0.18) 3px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+  pointer-events: none;
+  animation: crtFlicker 8s steps(1) infinite;
+  z-index: 2;
+}
+
+/* Neon grid */
+.scene-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(167, 139, 250, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(167, 139, 250, 0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+  background-position: center center;
+  animation: gridPulse 5s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes crtFlicker {
+  0%, 94%, 100% { opacity: 1; }
+  95%            { opacity: 0.92; }
+  96%            { opacity: 1; }
+  97%            { opacity: 0.95; }
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1.0; }
+}
+
+/* ── Top banner — VHS broadcast title card ────────────────────────────────── */
+.promo-top-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  text-align: center;
+  padding: 14px 0 10px;
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.96) 0%,
+    rgba(13, 0, 26, 0.90) 60%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+/* VHS SMPTE color bars strip */
+.promo-top-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg,
+    #C0C0C0 0%,    #C0C0C0 12.5%,
+    #C0C000 12.5%, #C0C000 25%,
+    #00C0C0 25%,   #00C0C0 37.5%,
+    #00C000 37.5%, #00C000 50%,
+    #C000C0 50%,   #C000C0 62.5%,
+    #C00000 62.5%, #C00000 75%,
+    #0000C0 75%,   #0000C0 100%
+  );
+}
+
+/* Bottom edge accent */
+.promo-top-banner::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent, rgba(167,139,250,0.5) 30%, rgba(255,0,110,0.5) 70%, transparent);
+}
+
+.promo-logo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(10px, 2vw, 18px);
+  color: #A78BFA;
+  letter-spacing: 4px;
+  display: block;
+  text-shadow:
+    0 0  8px #A78BFA,
+    0 0 20px #A78BFA,
+    0 0 40px rgba(167,139,250,0.4),
+    3px 3px 0 #000,
+    4px 4px 0 #330066;
+  animation: logoGlow 2.5s ease-in-out infinite;
+}
+
+.promo-logo-sub {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(5px, 0.9vw, 8px);
+  color: #FF006E;
+  letter-spacing: 5px;
+  display: block;
+  margin-top: 7px;
+  text-shadow:
+    0 0  6px #FF006E,
+    0 0 14px rgba(255,0,110,0.4),
+    2px 2px 0 #000;
+  animation: subGlow 2.5s ease-in-out infinite reverse;
+}
+
+@keyframes logoGlow {
+  0%, 100% {
+    text-shadow:
+      0 0  8px #A78BFA, 0 0 20px #A78BFA,
+      0 0 40px rgba(167,139,250,0.4),
+      3px 3px 0 #000, 4px 4px 0 #330066;
+  }
+  50% {
+    text-shadow:
+      0 0 15px #A78BFA, 0 0 35px #A78BFA,
+      0 0 70px rgba(167,139,250,0.7),
+      3px 3px 0 #000, 4px 4px 0 #330066;
+  }
+}
+
+@keyframes subGlow {
+  0%, 100% { text-shadow: 0 0  6px #FF006E, 0 0 14px rgba(255,0,110,0.4), 2px 2px 0 #000; }
+  50%       { text-shadow: 0 0 12px #FF006E, 0 0 28px rgba(255,0,110,0.7), 2px 2px 0 #000; }
+}
+
+/* ── Bottom rainbow strip ─────────────────────────────────────────────────── */
+.promo-bottom-strip {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  height: 6px;
+  background: linear-gradient(90deg,
+    #A78BFA, #FF006E, #FFFF00, #00FFFF, #39FF14, #FF6600, #A78BFA, #FF006E
+  );
+  background-size: 400% 100%;
+  animation: stripScroll 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes stripScroll {
+  0%   { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Corner canvases ──────────────────────────────────────────────────────── */
+.corner-canvas {
+  position: fixed;
+  z-index: 3;
+  image-rendering: pixelated;
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+
+.corner-canvas:hover { opacity: 0.8; }
+
+.corner-canvas.top-left     { top: 68px;   left: 16px;  }
+.corner-canvas.top-right    { top: 68px;   right: 16px; }
+.corner-canvas.bottom-left  { bottom: 24px; left: 16px; }
+.corner-canvas.bottom-right { bottom: 24px; right: 16px; }
+
+/* ── Drifting background cells ────────────────────────────────────────────── */
+.bg-cell {
+  position: fixed;
+  z-index: 1;
+  border-radius: 1px;
+  opacity: 0;
+  pointer-events: none;
+  animation: cellDrift linear infinite;
+}
+
+@keyframes cellDrift {
+  0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0;    }
+  8%   { opacity: 0.35; }
+  92%  { opacity: 0.35; }
+  100% { transform: translateY(-10vh)  rotate(360deg); opacity: 0;    }
+}
+
+/* ── Outer retro overlay stage ────────────────────────────────────────────── */
+#retro-overlay-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── Bubble overlay ───────────────────────────────────────────────────────── */
+.retro-bubble {
+  position: absolute;
+  font-family: 'Press Start 2P', monospace;
+  line-height: 1.5;
+  text-align: center;
+  max-width: 260px;
+  transform-origin: center center;
+}
+
+.retro-bubble-text {
+  display: block;
+  position: relative;
+  z-index: 2;
+  -webkit-text-stroke: 3px #000;
+  paint-order: stroke fill;
+  /* Solid offset drop shadow — no blur, very 80s */
+  filter: drop-shadow(5px 5px 0 #000);
+}
+
+/* Starburst burst behind the text */
+.retro-starburst-bg {
+  position: absolute;
+  inset: -24px;
+  z-index: 1;
+  clip-path: polygon(
+    50%  2%,  56% 28%,  76%  8%,  70% 32%,
+    97% 26%,  78% 44%,  98% 56%,  74% 60%,
+    84% 87%,  60% 70%,  54% 97%,  44% 70%,
+    20% 87%,  28% 60%,   3% 57%,  24% 44%,
+     4% 27%,  32% 33%,  24%  8%,  44% 28%
+  );
+  animation: starburstPulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes starburstPulse {
+  0%   { transform: scale(1.00) rotate(0deg);   }
+  100% { transform: scale(1.04) rotate(1.5deg); }
+}
+
+/* Entry animations */
+.retro-bubble.anim-wham {
+  animation: bubbleWham 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.retro-bubble.anim-slide-left {
+  animation: bubbleSlideLeft 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.retro-bubble.anim-slide-right {
+  animation: bubbleSlideRight 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.retro-bubble.anim-exit {
+  animation: bubbleExit 0.3s ease-in both;
+}
+
+@keyframes bubbleWham {
+  0%   { transform: scale(0.4) rotate(var(--r, -4deg)); opacity: 0; }
+  65%  { transform: scale(1.2) rotate(var(--r, -4deg)); opacity: 1; }
+  100% { transform: scale(1.0) rotate(var(--r, -4deg)); opacity: 1; }
+}
+
+@keyframes bubbleSlideLeft {
+  0%   { transform: translateX(-130%) rotate(var(--r, -4deg)); opacity: 0; }
+  75%  { transform: translateX(6%)    rotate(var(--r, -4deg)); opacity: 1; }
+  100% { transform: translateX(0)     rotate(var(--r, -4deg)); opacity: 1; }
+}
+
+@keyframes bubbleSlideRight {
+  0%   { transform: translateX(130%)  rotate(var(--r, -4deg)); opacity: 0; }
+  75%  { transform: translateX(-6%)   rotate(var(--r, -4deg)); opacity: 1; }
+  100% { transform: translateX(0)     rotate(var(--r, -4deg)); opacity: 1; }
+}
+
+@keyframes bubbleExit {
+  0%   { transform: scale(1.0) rotate(var(--r, -4deg)); opacity: 1; }
+  100% { transform: scale(0.3) rotate(var(--r, -4deg)); opacity: 0; }
+}
+
+/* ── Ticker tape ──────────────────────────────────────────────────────────── */
+.retro-ticker {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  border-top: 4px solid #000;
+  border-bottom: 4px solid #000;
+  padding: 9px 0;
+  animation: tickerReveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.retro-ticker-inner {
+  display: inline-block;
+  white-space: nowrap;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding-left: 100vw;
+  animation: tickerScroll 14s linear forwards;
+}
+
+@keyframes tickerReveal {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0);    }
+}
+
+@keyframes tickerScroll {
+  to { transform: translateX(calc(-100% - 100vw)); }
+}
+
+/* ── Recording controls override ─────────────────────────────────────────── */
+/* Restyle the existing controls to match broadcast aesthetic */
+.controls {
+  z-index: 50;
+  background: rgba(0,0,0,0.8);
+  border: 2px solid rgba(167,139,250,0.4);
+  border-radius: 4px;
+  padding: 8px;
+  backdrop-filter: blur(4px);
+  bottom: 14px;
+}
+
+.ctrl-btn {
+  font-size: 8px;
+  letter-spacing: 1px;
+  border-radius: 2px;
+  padding: 8px 14px;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.ctrl-btn:hover {
+  box-shadow: 0 0 10px rgba(167,139,250,0.5);
+}
+
+.ctrl-btn.primary {
+  background: #A78BFA;
+  color: #000;
+  box-shadow: 3px 3px 0 #330066;
+  border: none;
+}
+
+.ctrl-btn.primary:hover {
+  background: #c4b5fd;
+  box-shadow: 3px 3px 0 #4400aa;
+}
